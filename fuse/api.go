@@ -366,6 +366,14 @@ type MountOptions struct {
 	// If unset, the default is 1.
 	MaxStackDepth int
 
+	// RequestTimeout, if nonzero, asks the kernel to abort the
+	// connection when a request is not answered within this many
+	// seconds. It takes effect only if the kernel offers
+	// CAP_REQUEST_TIMEOUT. The kernel checks for expired requests
+	// periodically and may raise or clamp the value, so an abort can
+	// come later than requested.
+	RequestTimeout uint16
+
 	// IDMappedMount, if set, enables an ID-mapped mount if the Kernel supports
 	// it.
 	//

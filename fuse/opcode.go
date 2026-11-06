@@ -114,6 +114,9 @@ func doInit(server *protocolServer, req *request) {
 	if server.opts.EnableAcl {
 		kernelFlags |= input.Flags64() & CAP_POSIX_ACL
 	}
+	if server.opts.RequestTimeout > 0 {
+		kernelFlags |= input.Flags64() & CAP_REQUEST_TIMEOUT
+	}
 
 	if server.opts.ExplicitDataCacheControl {
 		// we don't want CAP_AUTO_INVAL_DATA even if we cannot go into fully explicit mode
@@ -147,6 +150,9 @@ func doInit(server *protocolServer, req *request) {
 	}
 	out.setFlags(kernelFlags)
 	server.negotiatedFlags = out.Flags64()
+	if server.negotiatedFlags&CAP_REQUEST_TIMEOUT != 0 {
+		out.RequestTimeout = server.opts.RequestTimeout
+	}
 	if server.opts.MaxReadAhead != 0 && uint32(server.opts.MaxReadAhead) < out.MaxReadAhead {
 		out.MaxReadAhead = uint32(server.opts.MaxReadAhead)
 	}
