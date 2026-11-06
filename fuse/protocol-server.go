@@ -31,6 +31,9 @@ type protocolServer struct {
 	// Capabilities sent in InitOut.
 	negotiatedFlags uint64
 
+	// The reply to INIT.
+	initOut InitOut
+
 	opts *MountOptions
 
 	// Pools for []byte

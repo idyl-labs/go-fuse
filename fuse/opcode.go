@@ -159,6 +159,7 @@ func doInit(server *protocolServer, req *request) {
 	if out.Minor > input.Minor {
 		out.Minor = input.Minor
 	}
+	server.initOut = *out
 
 	req.status = OK
 }

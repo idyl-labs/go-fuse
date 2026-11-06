@@ -86,6 +86,24 @@ func (ms *Server) KernelSettings() *InitIn {
 	return &s
 }
 
+// Adoption holds what the kernel and a Server agreed on during INIT.
+// A Server that takes over the connection needs it to parse requests,
+// because the kernel sends INIT only once per connection. See
+// MountOptions.Adopt.
+type Adoption struct {
+	// In is the INIT request from the kernel.
+	In InitIn
+
+	// Out is the reply to INIT, as sent to the kernel.
+	Out InitOut
+}
+
+// AdoptionState returns the settings agreed during INIT, for handing
+// the connection to another Server. See MountOptions.Adopt.
+func (ms *Server) AdoptionState() Adoption {
+	return Adoption{In: ms.kernelSettings, Out: ms.initOut}
+}
+
 const _MAX_NAME_LEN = 20
 
 // This type is deprecated.
@@ -257,6 +275,14 @@ func NewServer(fs RawFileSystem, mountPoint string, opts *MountOptions) (*Server
 		}
 		mountPoint = filepath.Clean(filepath.Join(cwd, mountPoint))
 	}
+	if o.Adopt != nil {
+		if parseFuseFd(mountPoint) < 0 {
+			return nil, fmt.Errorf("MountOptions.Adopt needs a /dev/fd/N mountpoint, got %q", mountPoint)
+		}
+		// The connection is mounted already.
+		o.DirectMount = false
+		o.DirectMountStrict = false
+	}
 	fd, err := mount(mountPoint, &o, ms.ready)
 	if err != nil {
 		return nil, err
@@ -269,7 +295,12 @@ func NewServer(fs RawFileSystem, mountPoint string, opts *MountOptions) (*Server
 	}
 	ms.protocolServer.writev = ms.fuseFD.writev
 
-	if code := ms.handleInit(); !code.Ok() {
+	if o.Adopt != nil {
+		ms.kernelSettings = o.Adopt.In
+		ms.initOut = o.Adopt.Out
+		ms.negotiatedFlags = o.Adopt.Out.Flags64()
+		ms.initFileSystem()
+	} else if code := ms.handleInit(); !code.Ok() {
 		ms.fuseFD.close()
 		// TODO - unmount as well?
 		return nil, fmt.Errorf("init: %s", code)
@@ -420,7 +451,12 @@ func (ms *Server) handleInit() Status {
 	if code := ms.handleRequest(req); !code.Ok() {
 		return code
 	}
+	ms.initFileSystem()
+	return OK
+}
 
+// initFileSystem runs once the INIT settings are known.
+func (ms *Server) initFileSystem() {
 	if ms.kernelSettings.Minor >= 13 {
 		ms.setSplice()
 	}
@@ -428,7 +464,6 @@ func (ms *Server) handleInit() Status {
 	// INIT is handled. Init the file system, but don't accept
 	// incoming requests, so the file system can setup itself.
 	ms.fileSystem.Init(ms)
-	return OK
 }
 
 // loop is the FUSE event loop. The simplistic way of calling this is

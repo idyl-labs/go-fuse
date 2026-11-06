@@ -374,6 +374,25 @@ type MountOptions struct {
 	// come later than requested.
 	RequestTimeout uint16
 
+	// Adopt, if set, makes NewServer take over a connection that
+	// another Server has already initialized, rather than wait for
+	// the INIT request, which the kernel sends only once per
+	// connection. Set it to what the previous Server's AdoptionState
+	// returned, and pass the connection's file descriptor to
+	// NewServer as a "/dev/fd/N" mountpoint. The descriptor can be
+	// inherited or received over a Unix socket. The mount stays in
+	// place as long as some process holds the descriptor open.
+	//
+	// The previous Server must have stopped reading from the
+	// connection. A request that it read but did not answer stays
+	// unanswered. The file system must accept the node IDs and file
+	// handles that the previous Server handed to the kernel.
+	//
+	// Use the same options as the previous Server. Settings agreed
+	// during INIT, such as MaxWrite, the capabilities and
+	// RequestTimeout, cannot change on a live connection.
+	Adopt *Adoption
+
 	// IDMappedMount, if set, enables an ID-mapped mount if the Kernel supports
 	// it.
 	//
