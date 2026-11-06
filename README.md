@@ -1,3 +1,24 @@
+# About this copy
+
+This repository is a copy of [hanwen/go-fuse](https://github.com/hanwen/go-fuse).
+Tag `v2.12.2-idyl.1` is upstream `v2.12.1` with two additions to the `fuse`
+package:
+
+* `MountOptions.RequestTimeout` asks the kernel to abort the connection when
+  a request goes unanswered for too long.
+* `MountOptions.Adopt` and `Server.AdoptionState` let a new `Server` take over
+  a live connection from a previous one, without unmounting.
+
+The module path is unchanged. Use the copy with a `replace` directive:
+
+```
+replace github.com/hanwen/go-fuse/v2 => github.com/idyl-labs/go-fuse/v2 v2.12.2-idyl.1
+```
+
+The same changes, written against upstream `master`, are on the
+`adopt-connection` branch. This copy will be retired once an upstream
+release includes equivalent support.
+
 # Go-FUSE
 
 [![CI](https://github.com/hanwen/go-fuse/actions/workflows/ci.yml/badge.svg)](https://github.com/hanwen/go-fuse/actions/workflows/ci.yml)
