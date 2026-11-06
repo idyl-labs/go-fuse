@@ -180,13 +180,19 @@ func doInit(server *protocolServer, req *request) {
 		out.MaxPages = want.MaxPages
 	}
 
-	conn := server.conn
-	conn.out = *out
-	conn.notify = conn.notify.gate(input)
-	conn.backing = conn.backing.gate(input)
-	server.fileSystem.OnConnect(conn)
-
+	server.connect(input, out)
 	req.status = OK
+}
+
+// connect records the negotiated connection and passes it to the file
+// system.
+func (server *protocolServer) connect(in *InitIn, out *InitOut) {
+	conn := server.conn
+	conn.in = *in
+	conn.out = *out
+	conn.notify = conn.notify.gate(in)
+	conn.backing = conn.backing.gate(in)
+	server.fileSystem.OnConnect(conn)
 }
 
 func doOpen(server *protocolServer, req *request) {
