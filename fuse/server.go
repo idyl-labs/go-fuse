@@ -264,6 +264,14 @@ func NewServer(fs RawFileSystem, mountPoint string, opts *MountOptions) (*Server
 		// across file systems. Presumably, we could also fix
 		// this by reading the requests using readv.
 		buf := make([]byte, readBufBytes)
+		// Every page is written once, so the kernel's copy of a request
+		// into the buffer never faults. A fault while the server is being
+		// killed fails the copy, and the kernel then ends the request with
+		// EIO instead of leaving it for a server that takes over the
+		// connection to read again.
+		for i := 0; i < len(buf); i += os.Getpagesize() {
+			buf[i] = 0
+		}
 		buf = alignSlice(buf, unsafe.Sizeof(WriteIn{}), logicalBlockSize, uintptr(readBufSize))
 		return buf
 	}
